@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical Assist Pro - Triage System</title>
+    <style>
+        /* TEMA HIJAU CERAH (FRESH MEDICAL GREEN) */
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: linear-gradient(135deg, #e8f5e9 0%, #a5d6a7 100%);
+            min-height: 100vh;
+            margin: 0;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        
+        .container {
+            background-color: #ffffff;
+            padding: 40px 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(76, 175, 80, 0.2);
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+            border-top: 6px solid #4caf50;
+        }
+        .logo-medis { font-size: 40px; margin-bottom: 10px; }
+        h2 { color: #2e7d32; margin: 0 0 5px 0; font-weight: 800; }
+        .subtitle { color: #558b2f; font-size: 14px; margin-bottom: 25px; }
+        
+        select {
+            width: 100%; padding: 15px; border: 2px solid #c8e6c9;
+            border-radius: 12px; font-size: 16px; background-color: #f1f8e9;
+            color: #333; outline: none; cursor: pointer; box-sizing: border-box;
+            transition: all 0.3s ease;
+        }
+        select:focus { border-color: #4caf50; box-shadow: 0 0 8px rgba(76, 175, 80, 0.3); }
+
+        #pesanError { color: #dc3545; font-size: 14px; font-weight: bold; margin-top: 10px; display: none; }
+        #areaPertanyaan { display: none; text-align: left; margin-top: 20px; }
+        
+        .kartu-pertanyaan {
+            background-color: #f1f8e9; border-left: 4px solid #4caf50;
+            padding: 15px; margin-bottom: 15px; border-radius: 8px;
+        }
+        .kartu-pertanyaan p { margin: 0 0 10px 0; font-weight: bold; font-size: 15px; color: #1b5e20; }
+        .opsi-radio { display: flex; gap: 20px; }
+        .opsi-radio label { cursor: pointer; font-size: 15px; display: flex; align-items: center; gap: 5px; color: #333; }
+
+        button {
+            background: linear-gradient(to right, #4caf50, #388e3c);
+            color: white; border: none; padding: 15px 20px; margin-top: 20px;
+            border-radius: 10px; cursor: pointer; font-size: 16px;
+            width: 100%; font-weight: bold; transition: 0.3s;
+        }
+        button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4); }
+        
+        .btn-sekunder { background: #e0e0e0; color: #424242; margin-top: 10px; }
+        .btn-sekunder:hover { background: #bdbdbd; color: #212121; }
+
+        .disclaimer-box {
+            margin-top: 25px; padding: 12px; background-color: #fff3cd;
+            border-left: 4px solid #ffc107; border-radius: 6px;
+            font-size: 12px; color: #856404; text-align: left; line-height: 1.4;
+        }
+
+        .modal {
+            display: none; position: fixed; z-index: 100; left: 0; top: 0;
+            width: 100%; height: 100%; background-color: rgba(0,0,0,0.6);
+            backdrop-filter: blur(5px); overflow-y: auto;
+        }
+        .modal-content {
+            background-color: #fff; margin: 5% auto; padding: 35px 25px;
+            border-radius: 20px; width: 85%; max-width: 400px;
+            text-align: center; border-top: 6px solid #4caf50;
+        }
+        .progress-container { display: flex; justify-content: center; margin: 20px 0; }
+        .circular-progress {
+            position: relative; width: 130px; height: 130px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .circular-progress::before {
+            content: ""; position: absolute; width: 105px; height: 105px;
+            border-radius: 50%; background-color: white;
+        }
+        .progress-value { position: relative; font-size: 32px; font-weight: 900; color: #333; }
+        .nama-penyakit { font-size: 22px; color: #1b5e20; font-weight: 800; margin-bottom: 10px; }
+        .tingkat-keparahan { font-size: 16px; font-weight: bold; margin-bottom: 20px; padding: 5px 15px; border-radius: 20px; display: inline-block; color: white;}
+        .teks-saran { background-color: #f1f8e9; padding: 15px; border-radius: 6px; font-size: 14px; text-align: left; margin-bottom: 25px; }
+    </style>
+</head>
+<body>
+
+    <div class="container" id="halamanUtama">
+        <div class="logo-medis">🌿</div>
+        <h2>Medical Assist</h2>
+        <div class="subtitle">Sistem Pakar Triage (Penilaian Keparahan)</div>
+        
+        <select id="pilihanGejala">
+            <option value="" disabled selected>-- Pilih Kategori Gejala Anda --</option>
+            <option value="demam">🌡️ Demam / Panas Tubuh</option>
+            <option value="batuk_flu">🤧 Batuk, Pilek / Flu</option>
+            <option value="perut">🤢 Penyakit Pencernaan / Lambung</option>
+            <option value="diare">🚽 Diare / Mencret</option>
+            <option value="kepala">🤕 Sakit Kepala / Pusing</option>
+            <option value="kulit">🩹 Gatal-gatal / Ruam Kulit</option>
+            <option value="gigi">🦷 Sakit Gigi / Gusi</option>
+            <option value="sendi">🦵 Nyeri Sendi / Otot</option>
+            <option value="diabetes">🩸 Gejala Diabetes / Gula Darah</option>
+        </select>
+        
+        <div id="pesanError">⚠️ Silakan pilih kategori gejala Anda terlebih dahulu!</div>
+
+        <button id="btnMulai" onclick="mulaiKonsultasi()">Mulai Konsultasi</button>
+
+        <div id="areaPertanyaan"></div>
+        
+        <button id="btnDiagnosis" style="display: none;" onclick="hitungDiagnosis()">Lihat Hasil Analisis</button>
+        <button id="btnKembali" class="btn-sekunder" style="display: none;" onclick="kembaliAwal()">Kembali</button>
+
+        <div class="disclaimer-box">
+            <strong>⚠️ PERHATIAN:</strong><br>
+            Aplikasi ini menggunakan metode <i>Decision Tree</i>. Hasil <b>bukanlah diagnosis pasti</b>.
+        </div>
+    </div>
+
+    <div id="jendelaHasil" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-top: 0; color: #2e7d32;">HASIL PENILAIAN</h3>
+            <div class="progress-container">
+                <div class="circular-progress" id="lingkaranProgress">
+                    <span class="progress-value" id="hasilPersen">0%</span>
+                </div>
+            </div>
+            <div class="nama-penyakit" id="hasilPenyakit">Nama Penyakit</div>
+            <div class="tingkat-keparahan" id="hasilTingkat">Tingkat Keparahan</div>
+            <div class="teks-saran" id="hasilSaran">Saran...</div>
+            <button class="btn-sekunder" onclick="tutupModal()">Tutup Hasil</button>
+        </div>
+    </div>
+
+    <script>
+        const databaseMedis = {
+            demam: {
+                pertanyaan: [
+                    "Apakah suhu tubuh Anda lebih dari 39°C?",
+                    "Apakah demam sudah berlangsung lebih dari 3 hari?",
+                    "Apakah muncul bintik merah di kulit atau gusi berdarah?",
+                    "Apakah disertai menggigil hebat, mual, atau muntah berulang?"
+                ],
+                hasil: [
+                    { batasYa: 1, tingkat: "RINGAN", warna: "#28a745", persen: 25, nama: "Demam Biasa / Kelelahan", saran: "Istirahat yang cukup, perbanyak minum air putih, dan konsumsi obat penurun panas (Paracetamol). Kompres dahi dengan air hangat." },
+                    { batasYa: 2, tingkat: "SEDANG", warna: "#ffc107", persen: 60, nama: "Infeksi Virus / Radang", saran: "Tetap pantau suhu tubuh secara berkala. Jika demam tidak turun atau gejala semakin memburuk dalam 24 jam ke depan, segera kunjungi klinik terdekat." },
+                    { batasYa: 4, tingkat: "DARURAT", warna: "#dc3545", persen: 95, nama: "Waspada DBD / Malaria", saran: "SEGERA KE IGD/RUMAH SAKIT! Gejala Anda merupakan tanda bahaya yang memerlukan tes darah dan penanganan dokter segera." }
+                ]
+            },
+            batuk_flu: {
+                pertanyaan: [
+                    "Apakah Anda mengalami pilek, hidung tersumbat, atau sakit tenggorokan?",
+                    "Apakah batuk Anda berdahak kental (kuning/hijau) atau berlangsung lebih dari 1 minggu?",
+                    "Apakah disertai nyeri otot, demam, dan kelelahan yang membuat sulit beraktivitas?",
+                    "Apakah Anda merasakan sesak napas, dada terasa berat, atau batuk berdarah?"
+                ],
+                hasil: [
+                    { batasYa: 1, tingkat: "RINGAN", warna: "#28a745", persen: 20, nama: "Common Cold (Pilek Biasa)", saran: "Perbanyak minum air hangat, konsumsi vitamin C, istirahat cukup, dan hindari minuman es." },
+                    { batasYa: 2, tingkat: "SEDANG", warna: "#ffc107", persen: 65, nama: "Influenza / ISPA Ringan", saran: "Istirahat total (bed rest), gunakan masker, dan konsumsi obat flu/batuk. Jika sesak napas mulai muncul, periksa ke dokter." },
+                    { batasYa: 4, tingkat: "DARURAT", warna: "#dc3545", persen: 92, nama: "Waspada Pneumonia / Infeksi Paru", saran: "SEGERA KE DOKTER PARU/IGD! Gejala sesak napas berat atau batuk berdarah memerlukan observasi paru-paru secepatnya." }
+                ]
+            },
+            perut: {
+                pertanyaan: [
+                    "Apakah nyeri terasa sangat tajam di bagian perut kanan bawah atau ulu hati?",
+                    "Apakah disertai muntah hebat atau rasa panas di kerongkongan?",
+                    "Apakah Anda sering terlambat makan atau mengonsumsi makanan pedas/asam berlebih?",
+                    "Apakah nyeri perut membuat Anda tidak bisa berdiri tegak?"
+                ],
+                hasil: [
+                    { batasYa: 1, tingkat: "RINGAN", warna: "#28a745", persen: 30, nama: "Dispepsia / Maag", saran: "Kompres perut dengan botol air hangat. Hindari makanan pedas, asam, bersantan, dan kopi untuk sementara waktu." },
+                    { batasYa: 2, tingkat: "SEDANG", warna: "#ffc107", persen: 65, nama: "GERD / Infeksi Lambung", saran: "Makan dalam porsi kecil namun sering. Jangan langsung berbaring setelah makan. Jika perih berlanjut, konsumsi antasida." },
+                    { batasYa: 4, tingkat: "DARURAT", warna: "#dc3545", persen: 98, nama: "Waspada Usus Buntu / Luka Lambung", saran: "SEGERA KE UGD RUMAH SAKIT! Nyeri perut yang tak tertahankan hingga tidak bisa berdiri adalah indikasi gawat darurat." }
+                ]
+            },
+            diare: {
+                pertanyaan: [
+                    "Apakah Anda buang air besar (BAB) cair lebih dari 3 kali sehari?",
+                    "Apakah perut terasa sangat melilit atau kram sebelum BAB?",
+                    "Apakah Anda merasa sangat kehausan, mulut kering, dan lemas?",
+                    "Apakah terdapat lendir atau darah pada tinja (BAB) Anda?"
+                ],
+                hasil: [
+                    { batasYa: 1, tingkat: "RINGAN", warna: "#28a745", persen: 30, nama: "Diare Ringan / Salah Makan", saran: "Perbanyak minum air putih atau oralit untuk mengganti cairan tubuh. Hindari makanan pedas dan bersantan." },
+                    { batasYa: 2, tingkat: "SEDANG", warna: "#ffc107", persen: 65, nama: "Infeksi Bakteri / Keracunan Makanan", saran: "Teruskan minum oralit setiap sehabis BAB. Konsumsi makanan lunak seperti bubur. Jika diare berlanjut lebih dari 2 hari, segera ke klinik." },
+                    { batasYa: 4, tingkat: "DARURAT", warna: "#dc3545", persen: 95, nama: "Waspada Disentri / Dehidrasi Berat", saran: "SEGERA KE IGD! Lendir/darah pada BAB dan dehidrasi berat sangat berbahaya dan membutuhkan penanganan infus segera." }
+                ]
+            },
+            kepala: {
+                pertanyaan: [
+                    "Apakah sakit kepala terasa berdenyut parah di satu sisi?",
+                    "Apakah disertai pandangan kabur, silau terhadap cahaya, atau berdenging?",
+                    "Apakah Anda merasa tengkuk/leher belakang sangat kaku dan berat?",
+                    "Apakah rasa sakit muncul tiba-tiba dengan intensitas tidak tertahankan?"
+                ],
+                hasil: [
+                    { batasYa: 1, tingkat: "RINGAN", warna: "#28a745", persen: 25, nama: "Tension Headache", saran: "Istirahatkan mata Anda dari layar gadget. Minum air putih yang banyak, kurangi stres, dan coba tidur sejenak." },
+                    { batasYa: 2, tingkat: "SEDANG", warna: "#ffc107", persen: 60, nama: "Migrain / Hipertensi Ringan", saran: "Berbaring di ruangan yang gelap dan tenang. Jika Anda punya riwayat darah tinggi, segera cek tensi Anda." },
+                    { batasYa: 4, tingkat: "DARURAT", warna: "#dc3545", persen: 95, nama: "Waspada Hipertensi Berat / Stroke", saran: "SEGERA KE RUMAH SAKIT! Sakit kepala hebat mendadak, tengkuk kaku, dan pandangan kabur bisa menjadi tanda bahaya saraf." }
+                ]
+            },
+            kulit: {
+                pertanyaan: [
+                    "Apakah Anda mengalami gatal-gatal hebat yang menyebar luas?",
+                    "Apakah muncul bintik berisi cairan (lenting air) atau ruam kemerahan parah?",
+                    "Apakah area yang gatal bengkak dan terasa panas saat disentuh?",
+                    "Apakah ruam disertai sesak napas atau bengkak pada area bibir/mata?"
+                ],
+                hasil: [
+                    { batasYa: 1, tingkat: "RINGAN", warna: "#28a745", persen: 20, nama: "Alergi Ringan / Eksim", saran: "Jaga kelembapan kulit dengan losion. Hindari mandi dengan air terlalu panas dan jangan digaruk keras agar tidak infeksi." },
+                    { batasYa: 2, tingkat: "SEDANG", warna: "#ffc107", persen: 70, nama: "Cacar Air / Infeksi Kulit", saran: "Gunakan bedak salisil atau losion kalamin. Jika muncul bintik air yang menyebar, isolasi diri agar tidak menularkan ke orang lain." },
+                    { batasYa: 4, tingkat: "DARURAT", warna: "#dc3545", persen: 90, nama: "Reaksi Alergi Berat (Anafilaksis)", saran: "SEGERA KE IGD! Jika gatal disertai sesak napas atau bengkak di wajah, ini adalah reaksi alergi parah yang mengancam nyawa." }
+                ]
+            },
+            gigi: {
+                pertanyaan: [
+                    "Apakah gigi terasa ngilu saat minum sesuatu yang dingin atau panas?",
+                    "Apakah gusi tampak bengkak kemerahan dan mudah berdarah saat sikat gigi?",
+                    "Apakah rasa nyeri berdenyut kuat hingga membuat Anda sulit tidur?",
+                    "Apakah pipi tampak bengkak besar memerah dan disertai demam?"
+                ],
+                hasil: [
+                    { batasYa: 1, tingkat: "RINGAN", warna: "#28a745", persen: 20, nama: "Gigi Sensitif / Gingivitis", saran: "Gunakan pasta gigi khusus gigi sensitif. Sikat gigi dengan lembut 2 kali sehari dan gunakan obat kumur antiseptik." },
+                    { batasYa: 2, tingkat: "SEDANG", warna: "#ffc107", persen: 65, nama: "Pulpitis / Gigi Berlubang Parah", saran: "Berkumur dengan air garam hangat dan minum obat pereda nyeri. Segera jadwalkan kunjungan ke dokter gigi." },
+                    { batasYa: 4, tingkat: "DARURAT", warna: "#dc3545", persen: 90, nama: "Abses Gigi (Infeksi Menyebar)", saran: "SEGERA KE DOKTER GIGI/IGD! Pipi bengkak parah yang disertai demam menunjukkan infeksi bakteri sudah menyebar." }
+                ]
+            },
+            sendi: {
+                pertanyaan: [
+                    "Apakah nyeri terasa setelah melakukan aktivitas fisik berat atau olahraga?",
+                    "Apakah sendi tampak bengkak, kemerahan, dan terasa panas?",
+                    "Apakah Anda baru saja mengonsumsi banyak jeroan, emping, atau hidangan laut?",
+                    "Apakah nyeri membuat Anda sama sekali tidak bisa bergerak atau berjalan?"
+                ],
+                hasil: [
+                    { batasYa: 1, tingkat: "RINGAN", warna: "#28a745", persen: 15, nama: "Nyeri Otot / Kelelahan", saran: "Istirahatkan bagian yang sakit, lakukan peregangan ringan, dan kompres dengan air dingin (es) selama 15 menit." },
+                    { batasYa: 2, tingkat: "SEDANG", warna: "#ffc107", persen: 75, nama: "Asam Urat (Gout) / Radang Sendi", saran: "Hindari makanan tinggi purin (jeroan, hidangan laut). Perbanyak minum air putih untuk membantu membuang kristal asam urat." },
+                    { batasYa: 4, tingkat: "DARURAT", warna: "#dc3545", persen: 88, nama: "Cedera Serius / Patah Tulang", saran: "JANGAN PAKSAKAN BERGERAK! Jika sendi tidak bisa digerakkan sama sekali, segera ke rumah sakit untuk rontgen." }
+                ]
+            },
+            diabetes: {
+                pertanyaan: [
+                    "Apakah Anda sering merasa sangat kehausan dan buang air kecil terus (terutama malam)?",
+                    "Apakah Anda merasa cepat lelah dan selalu lapar meski sudah makan?",
+                    "Apakah Anda sering mengalami kesemutan atau mati rasa di tangan/kaki?",
+                    "Apakah Anda memiliki luka yang sangat lama atau sulit untuk sembuh?"
+                ],
+                hasil: [
+                    { batasYa: 1, tingkat: "RINGAN", warna: "#28a745", persen: 20, nama: "Kelelahan Biasa / Kurang Minum", saran: "Pastikan Anda minum cukup air setiap hari dan perbaiki pola tidur. Kurangi konsumsi minuman manis." },
+                    { batasYa: 2, tingkat: "SEDANG", warna: "#ffc107", persen: 70, nama: "Indikasi Pre-Diabetes", saran: "Kurangi makanan manis dan karbohidrat sederhana secara drastis. Mulailah berolahraga rutin. Disarankan cek gula darah puasa ke klinik." },
+                    { batasYa: 4, tingkat: "DARURAT", warna: "#dc3545", persen: 92, nama: "Waspada Diabetes Mellitus", saran: "SEGERA PERIKSA KE DOKTER! Gejala klasik seperti sering haus, kencing, dan luka sulit sembuh adalah indikasi kuat diabetes yang butuh penanganan medis." }
+                ]
+            }
+        };
+
+        let gejalaAktif = "";
+
+        function mulaiKonsultasi() {
+            const dropdown = document.getElementById("pilihanGejala");
+            const pesanError = document.getElementById("pesanError");
+            gejalaAktif = dropdown.value;
+
+            if (!gejalaAktif) {
+                pesanError.style.display = "block"; // Munculkan teks error merah
+                return;
+            }
+            
+            pesanError.style.display = "none"; // Sembunyikan pesan error
+            dropdown.style.display = "none";
+            document.getElementById("btnMulai").style.display = "none";
+
+            const areaPertanyaan = document.getElementById("areaPertanyaan");
+            areaPertanyaan.innerHTML = `<h3 style="color: #2e7d32; margin-top:0;">Jawab Pertanyaan Berikut:</h3>`;
+            
+            const daftarTanya = databaseMedis[gejalaAktif].pertanyaan;
+            
+            daftarTanya.forEach((tanya, index) => {
+                areaPertanyaan.innerHTML += `
+                    <div class="kartu-pertanyaan">
+                        <p>${index + 1}. ${tanya}</p>
+                        <div class="opsi-radio">
+                            <label><input type="radio" name="q${index}" value="ya"> Ya</label>
+                            <label><input type="radio" name="q${index}" value="tidak"> Tidak</label>
+                        </div>
+                    </div>
+                `;
+            });
+
+            areaPertanyaan.style.display = "block";
+            document.getElementById("btnDiagnosis").style.display = "block";
+            document.getElementById("btnKembali").style.display = "block";
+        }
+
+        function kembaliAwal() {
+            document.getElementById("pilihanGejala").style.display = "block";
+            document.getElementById("pilihanGejala").value = "";
+            document.getElementById("btnMulai").style.display = "block";
+            document.getElementById("areaPertanyaan").style.display = "none";
+            document.getElementById("btnDiagnosis").style.display = "none";
+            document.getElementById("btnKembali").style.display = "none";
+            document.getElementById("pesanError").style.display = "none";
+        }
+
+        function hitungDiagnosis() {
+            const daftarTanya = databaseMedis[gejalaAktif].pertanyaan;
+            let jumlahYa = 0;
+            let semuaTerjawab = true;
+
+            for (let i = 0; i < daftarTanya.length; i++) {
+                const opsi = document.querySelector(`input[name="q${i}"]:checked`);
+                if (!opsi) {
+                    semuaTerjawab = false;
+                    break;
+                }
+                if (opsi.value === "ya") {
+                    jumlahYa++;
+                }
+            }
+
+            if (!semuaTerjawab) {
+                document.getElementById("pesanError").innerText = "⚠️ Mohon jawab seluruh pertanyaan (Ya/Tidak)!";
+                document.getElementById("pesanError").style.display = "block";
+                return;
+            }
+            
+            document.getElementById("pesanError").style.display = "none";
+
+            const referensiHasil = databaseMedis[gejalaAktif].hasil;
+            let hasilAkhir = referensiHasil[0]; // Default: Ringan
+
+            if (jumlahYa === 2 || jumlahYa === 3) {
+                hasilAkhir = referensiHasil[1]; // Sedang
+            } else if (jumlahYa === 4) {
+                hasilAkhir = referensiHasil[2]; // Darurat
+            }
+
+            document.getElementById("hasilPenyakit").innerText = hasilAkhir.nama;
+            document.getElementById("hasilSaran").innerText = hasilAkhir.saran;
+            
+            const elemenTingkat = document.getElementById("hasilTingkat");
+            elemenTingkat.innerText = `Status: ${hasilAkhir.tingkat}`;
+            elemenTingkat.style.backgroundColor = hasilAkhir.warna;
+
+            const elemenPersen = document.getElementById("hasilPersen");
+            const elemenLingkaran = document.getElementById("lingkaranProgress");
+            
+            elemenPersen.innerText = `${hasilAkhir.persen}%`;
+            elemenPersen.style.color = hasilAkhir.warna;
+            
+            let derajat = (hasilAkhir.persen / 100) * 360;
+            elemenLingkaran.style.background = `conic-gradient(${hasilAkhir.warna} ${derajat}deg, #e0e0e0 0deg)`;
+
+            document.getElementById("jendelaHasil").style.display = "block";
+        }
+
+        function tutupModal() {
+            document.getElementById("jendelaHasil").style.display = "none";
+        }
+    </script>
+</body>
+</html>
